@@ -76,6 +76,8 @@ class PetList(Resource):
         pets.append(pet)
         return pet, 201
 
+     """ Add experimental pet search endpoint. """
+
 @pet_ns.route('/<int:pet_id>')
 @pet_ns.response(404, 'Pet not found')
 @pet_ns.param('pet_id', 'The pet identifier')
