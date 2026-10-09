@@ -63,18 +63,39 @@ class PetList(Resource):
         """List all pets"""
         return pets
 
-    @pet_ns.doc('create_pet')
-    @pet_ns.expect(pet_model)
-    @pet_ns.response(409, 'Pet already exists')
-    @pet_ns.marshal_with(pet_model, code=201)
-    def post(self):
-        """Create a new pet"""
-        pet = api.payload
-        for i in pets:
-            if i['id'] == pet['id']:
-                api.abort(409, f"Pet with ID {pet['id']} already exists")
-        pets.append(pet)
-        return pet, 201
+
+@pet_ns.doc('create_pet')
+@pet_ns.expect(pet_model)
+@pet_ns.response(400, 'Invalid pet data')
+@pet_ns.response(409, 'Pet already exists')
+@pet_ns.marshal_with(pet_model, code=201)
+def post(self):
+    """Create a new pet"""
+    pet = api.payload
+
+    if not pet:
+        api.abort(400, "Pet data is required")
+
+    if not isinstance(pet.get('id'), int) or isinstance(pet.get('id'), bool):
+        api.abort(400, "A valid integer pet ID is required")
+
+    if not pet.get('name'):
+        api.abort(400, "Pet name is required")
+
+    if pet.get('type') not in PET_TYPE:
+        api.abort(400, f"Invalid pet type. Valid types: {', '.join(PET_TYPE)}")
+
+    if pet.get('status', 'available') not in PET_STATUS:
+        api.abort(400, f"Invalid pet status. Valid statuses: {', '.join(PET_STATUS)}")
+
+    for existing_pet in pets:
+        if existing_pet['id'] == pet['id']:
+            api.abort(409, f"Pet with ID {pet['id']} already exists")
+
+    pet.setdefault('status', 'available')
+    pets.append(pet)
+    return pet, 201
+
 
 @pet_ns.route('/<int:pet_id>')
 @pet_ns.response(404, 'Pet not found')
